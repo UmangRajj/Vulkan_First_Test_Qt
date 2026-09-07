@@ -2,6 +2,9 @@
 #include "ui_VulkanWidget.h"
 #include "VulkanSetup.h" // Vulkan Setup funcs, jinhe hum constructor me use karenge
 
+#include <QMessageBox>
+#include <QTimer>
+
 VulkanWidget::VulkanWidget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::VulkanWidget)
@@ -11,7 +14,7 @@ VulkanWidget::VulkanWidget(QWidget *parent)
     connect(ui->startRenderingBtn, &QPushButton::clicked, [this] (const bool& checked) {
         if (checked == true) {
             m_mainLoopStop = false;
-            startMainLoop();
+            //startMainLoop();
 
             ui->startRenderingBtn->setText("Stop Rendering!");
         } else {
@@ -21,28 +24,48 @@ VulkanWidget::VulkanWidget(QWidget *parent)
     });
 
     // Vulkan setup
-    initVulkan(this);
-    setupWindowSurface(this);
-    setupPhysicalDevice(this);
-    setupLogicalDevice(this);
-    setupSwapchain(this);
-    setupImageViews(this);
-    setupRenderPass(this);
-    setupGraphicsPipeline(this);
-    setupFramebuffer(this);
-    setupCommandPool(this);
-    setupCommandBuffer(this);
-    setupSyncObjects(this);
+    try {
+        initVulkan(this);
+        /*
+        setupWindowSurface(this);
+        setupPhysicalDevice(this);
+        setupLogicalDevice(this);
+        setupSwapchain(this);
+        setupImageViews(this);
+        setupRenderPass(this);
+        setupGraphicsPipeline(this);
+        setupFramebuffer(this);
+        setupCommandPool(this);
+        setupCommandBuffer(this);
+        setupSyncObjects(this);
+        */
+    } catch (const vk::SystemError &err) {
+        QMessageBox::critical(this, "Failed to Initialize Vulkan!",
+                              "Vulkan related Critical Error occured while initializing Vulkan, reason- " + QString(err.what()));
+        // qapp event loop shuru hone ke baad app band karo
+        QTimer::singleShot(5000, [this] () {
+            QApplication::quit();
+        });
+    } catch (const std::exception &err) {
+        QMessageBox::critical(this, "Failed to Initialize Vulkan!",
+                              "Critical Error occured while initializing Vulkan, reason- " + QString(err.what()));
+        // qapp event loop shuru hone ke baad app band karo
+        QTimer::singleShot(5000, [this] () {
+            QApplication::quit();
+        });
+    }
+
 
     // shuru se frame drawing (main loop ke andar) shuru hi rakhna hai
     // fir button ise modify karega
     m_mainLoopStop = false;
-    startMainLoop();
+    // startMainLoop();
 }
 
 VulkanWidget::~VulkanWidget()
 {
     delete ui;
+    // not needed after using modern vulkan
     /*
     //--vulkan handle destructions
     vkDestroySemaphore(m_vkDevice, m_imageReadySphore, nullptr);
@@ -71,7 +94,7 @@ VulkanWidget::~VulkanWidget()
     vkDestroyInstance(m_vkInstance, nullptr);
     */
 }
-
+/*
 void VulkanWidget::startMainLoop()
 {
     m_mainLoopFuture = QtConcurrent::run([this] {
@@ -80,7 +103,7 @@ void VulkanWidget::startMainLoop()
         }
     });
 }
-
+*/
 
 
 

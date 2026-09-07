@@ -30,65 +30,18 @@ static VkBool32 VKAPI_PTR debugCallback(
 }
 
 // validation layer debug messege printer ke liye
-void debugMessengerParmsFill(VkDebugUtilsMessengerCreateInfoEXT &objectToFill, VulkanWidget *data)
+void debugMessengerParmsFill(vk::DebugUtilsMessengerCreateInfoEXT &objectToFill, VulkanWidget *data)
 {
-    objectToFill.sType= VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    objectToFill.pNext = nullptr;
-    objectToFill.flags = 0;
-    objectToFill.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                                   VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                                   VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    objectToFill.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                               VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                               VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-    objectToFill.pfnUserCallback = debugCallback;
+
+
+    objectToFill.messageSeverity = vk::DebugUtilsMessageSeverityFlagsEXT(VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                                                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                                                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
+    objectToFill.messageType = vk::DebugUtilsMessageTypeFlagsEXT(VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                                                                 VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                                                 VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT);
+    objectToFill.pfnUserCallback = vk::PFN_DebugUtilsMessengerCallbackEXT(debugCallback);
     objectToFill.pUserData = data;
-}
-
-// queue families ki avaliblity aur index
-struct QueueFamilyIndices {
-    std::optional<uint> graphicsFamily;
-    std::optional<uint> presentFamily;
-
-    bool isComplete()
-    {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
-};
-
-QueueFamilyIndices queryQueueFamilyAvailiblity(VulkanWidget *widget, const VkPhysicalDevice &device)
-{
-    uint queueFamilyCount;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-    if (queueFamilyCount == 0)
-        return QueueFamilyIndices();
-
-    QList<VkQueueFamilyProperties> queueFamilyPropertiesList;
-    queueFamilyPropertiesList.resize(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyPropertiesList.data());
-
-
-    QueueFamilyIndices indices;
-    uint it {};
-    for (VkQueueFamilyProperties &property : queueFamilyPropertiesList) {
-        if (property.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            indices.graphicsFamily = it;
-        }
-
-        VkBool32 surfaceSupport;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, it, widget->windowSurface(), &surfaceSupport);
-
-        if (surfaceSupport)
-            indices.presentFamily = it;
-
-        if (indices.isComplete())
-            break;
-
-        ++it;
-    }
-
-    return indices;
 }
 
 struct SwapChainCapablityDetail
@@ -119,6 +72,7 @@ SwapChainCapablityDetail querySwapChainSupport(VulkanWidget &widget, VkPhysicalD
     return swapChainCaps;
 }
 
+/*
 void chooseSwapchainSettings(VulkanWidget &widget,
                              const SwapChainCapablityDetail &capablityDetail,
                              VkSurfaceFormatKHR &surfaceFormat,
@@ -259,5 +213,5 @@ void recordCommandBuffer(VulkanWidget *widget, VkCommandBuffer &buffer, const ui
     if (vkEndCommandBuffer(buffer) != VK_SUCCESS)
         throw std::runtime_error("Couldn't record command buffer!");
 }
-
+*/
 #endif // VULKANHELPERS_H

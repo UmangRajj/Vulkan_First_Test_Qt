@@ -1,3 +1,4 @@
+#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #include "VulkanSetup.h"
 
 #include "VulkanHelpers.h" // sare helpers jinhe hum vulkan setup funcs me use karte hai
@@ -10,34 +11,35 @@
 #include <QTimer>
 #include <QApplication>
 #include <QSet>
+#include <algorithm>
 
 void initVulkan(VulkanWidget *widget)
 {
     // --Vulkan Instance Banao
     constexpr vk::ApplicationInfo vkAppInfo {
-        "Vulkan First Test!",
-        VK_MAKE_VERSION(1, 0, 0),
-        "No Engine",
-        VK_MAKE_VERSION(1, 0, 0),
-        vk::ApiVersion14,
-        nullptr
+        .pNext = nullptr,
+        .pApplicationName = "Vulkan First Test!",
+        .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+        .pEngineName = "No Engine",
+        .engineVersion = VK_MAKE_VERSION(1, 0, 0),
+        .apiVersion = vk::ApiVersion14,
     };
 
     const char *extsList[] {
-        VK_KHR_SURFACE_EXTENSION_NAME,
-        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-        VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+        vk::KHRSurfaceExtensionName,
+        vk::KHRWin32SurfaceExtensionName,
+        vk::EXTDebugUtilsExtensionName
     };
     const char *validationLayers[] {"VK_LAYER_KHRONOS_validation"};
 
 #ifndef NDEBUG
     // instance creation debug karne ke liye
-    VkDebugUtilsMessengerCreateInfoEXT debugMessengerInstCreateInfo;
+    vk::DebugUtilsMessengerCreateInfoEXT debugMessengerInstCreateInfo;
     // VulkanHelpers.h se, callback aur parameters wagerah wahi handle hote hai
     debugMessengerParmsFill(debugMessengerInstCreateInfo, widget);
 #endif
 
-    vk::InstanceCreateInfo vkInstanceCreateInfo {
+    vk::InstanceCreateInfo instanceCreateInfo {
 #ifdef NDEBUG
         .pNext = nullptr,
 #else
@@ -56,34 +58,19 @@ void initVulkan(VulkanWidget *widget)
         .ppEnabledExtensionNames = extsList
     };
 
-    widget->vkInstance() = vk::raii::Instance(widget->vkContext)
-
-    if (instCreateResult != VK_SUCCESS) {
-        QMessageBox errorCritical;
-        errorCritical.critical((QWidget*)widget, "Couldn't Create Vulkan Instance!!",
-                               "Failed to create Vulkan Instance, reason- " + QString(string_VkResult(instCreateResult)));
-        errorCritical.open();
-
-        // qapp event loop shuru hone ke baad app band karo
-        QTimer::singleShot(0, [widget] () {
-            QApplication::quit();
-        });
-        return;
-    }
-
-    volkLoadInstance(widget->vkInstance()); // VOLK KO INSTANCE DO
+    widget->vkInstance() = vk::raii::Instance(widget->vkContext(), instanceCreateInfo);
 
 
 #ifndef NDEBUG
     // --Debug Messanger Setup karo baki kaamo ke liye
-    VkDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo;
+    vk::DebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo;
     debugMessengerParmsFill(debugMessengerCreateInfo, widget);
 
-    vkCreateDebugUtilsMessengerEXT(widget->vkInstance(), &debugMessengerCreateInfo, nullptr, &widget->vkDebugMessenger());
+    widget->vkDebugMessenger() = widget->vkInstance().createDebugUtilsMessengerEXT(debugMessengerCreateInfo, nullptr);
 #endif
 }
 
-
+/*
 void setupWindowSurface(VulkanWidget *widget)
 {
     VkWin32SurfaceCreateInfoKHR surfaceCreateInfo {
@@ -110,15 +97,15 @@ void setupWindowSurface(VulkanWidget *widget)
         return;
     }
 }
+*/
 
 void setupPhysicalDevice(VulkanWidget *widget)
 {
-    uint physicalDeviceCount {};
-    vkEnumeratePhysicalDevices(widget->vkInstance(), &physicalDeviceCount, nullptr);
+    auto devices = widget->vkInstance().enumeratePhysicalDevices();
 
-    qDebug() << "Vulkan supported physical device (GPU) count- " << physicalDeviceCount;
+    qDebug() << "Vulkan supported physical device (GPU) count- " << devices.size();
 
-    if (physicalDeviceCount == 0) {
+    if (devices.empty()) {
         QMessageBox errorCritical;
         errorCritical.critical((QWidget*)widget, "No Vulkan Device!",
                                "Vulkan supported device (GPU) not avaiible!");
@@ -131,23 +118,20 @@ void setupPhysicalDevice(VulkanWidget *widget)
         return;
     }
 
-    QList<VkPhysicalDevice> devices;
-    devices.resize(physicalDeviceCount);
-    vkEnumeratePhysicalDevices(widget->vkInstance(), &physicalDeviceCount, devices.data());
-
     for (uint i {}; i < devices.size(); ) {
-        VkPhysicalDeviceProperties deviceProperties;
-        VkPhysicalDeviceFeatures deviceFeatures;
-        vkGetPhysicalDeviceProperties(devices[i], &deviceProperties);
-        vkGetPhysicalDeviceFeatures(devices[i], &deviceFeatures);
+        vk::PhysicalDeviceProperties deviceProperties = devices[i].getProperties();
+        vk::PhysicalDeviceFeatures deviceFeatures = devices[i].getFeatures();
+
+        bool graphicsQueueSupported = std::ranges::
 
         // swap chain supported hai ya nahi, iska query func helpers header me hai
         bool swapChainSupported;
         SwapChainCapablityDetail capDetail = querySwapChainSupport(*widget, devices[i]);
         swapChainSupported = !capDetail.surfaceFormats.empty() && !capDetail.surfacePresentModes.empty();
 
-        // abhi ke liye koi property/feature check nahi karna hai
-        if (true && queryQueueFamilyAvailiblity(widget, devices[i]).isComplete() && swapChainSupported) {
+        if (deviceProperties.apiVersion >= vk::ApiVersion13
+            && queryQueueFamilyAvailiblity(widget, devices[i]).isComplete()
+            && swapChainSupported) {
             qDebug() << "Device " << deviceProperties.deviceName << "is choosed!";
             ++i;
         } else {
@@ -173,6 +157,7 @@ void setupPhysicalDevice(VulkanWidget *widget)
     }
 }
 
+/*
 void setupLogicalDevice(VulkanWidget *widget)
 {
     QueueFamilyIndices queueFamilies = queryQueueFamilyAvailiblity(widget, widget->vkPhysicalDevice());
@@ -709,4 +694,4 @@ void drawFrame(VulkanWidget *widget)
 
 
 }
-
+*/

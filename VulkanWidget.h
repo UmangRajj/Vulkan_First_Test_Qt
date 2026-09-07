@@ -27,6 +27,7 @@ public:
     vk::raii::DebugUtilsMessengerEXT &vkDebugMessenger() { return m_vkDebugMessenger; }
     vk::raii::PhysicalDevice &vkPhysicalDevice() { return m_vkPhysicalDevice; }
     vk::raii::Device &vkDevice() { return m_vkDevice; }
+    /*
     vk::raii::Queue &graphicsQueue() { return m_graphicsQueue; }
     vk::raii::Queue &presentQueue() { return m_presentQueue; }
     vk::raii::SurfaceKHR &windowSurface() { return m_windowSurface; }
@@ -44,9 +45,10 @@ public:
     VkSemaphore &imageReadySphore() { return m_imageReadySphore; }
     VkSemaphore &renderFinishedSphore() { return m_renderFinishedSphore; }
     VkFence &prevFrameWaitFence() { return m_prevFrameWaitFence; }
+    */
 
 public:
-    void startMainLoop();
+    // void startMainLoop();
 
 private:
     Ui::VulkanWidget *ui;
@@ -56,11 +58,12 @@ private:
     bool m_mainLoopStop;
 
     vk::raii::Context m_vkContext;
-    vk::raii::Instance m_vkInstance;
-    vk::raii::DebugUtilsMessengerEXT m_vkDebugMessenger; // validation-layers ke messeges khud handle karne ke liye
+    vk::raii::Instance m_vkInstance = nullptr;
+    vk::raii::DebugUtilsMessengerEXT m_vkDebugMessenger = nullptr; // validation-layers ke messeges khud handle karne ke liye
 
-    vk::raii::PhysicalDevice m_vkPhysicalDevice; // computing ke liye physical gpu device
-    vk::raii::Device m_vkDevice; // logical device
+    vk::raii::PhysicalDevice m_vkPhysicalDevice = nullptr; // computing ke liye physical gpu device
+    vk::raii::Device m_vkDevice = nullptr; // logical device
+    /*
     vk::raii::Queue m_graphicsQueue; // rendering ke liye graphics work queue!
     vk::raii::Queue m_presentQueue; // Surface (widget) me images present karne ke liye queue
     vk::raii::SurfaceKHR m_windowSurface; // render karne ke liye window surface
@@ -79,6 +82,7 @@ private:
     VkSemaphore m_imageReadySphore;
     VkSemaphore m_renderFinishedSphore;
     VkFence m_prevFrameWaitFence;
+    */
 };
 
 #endif // VULKANWIDGET_H
