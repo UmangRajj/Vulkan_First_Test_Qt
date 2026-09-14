@@ -11,7 +11,7 @@
 #include <QTimer>
 #include <QApplication>
 #include <QSet>
-#include <algorithm>
+#include <ranges>
 
 void initVulkan(VulkanWidget *widget)
 {
@@ -122,15 +122,18 @@ void setupPhysicalDevice(VulkanWidget *widget)
         vk::PhysicalDeviceProperties deviceProperties = devices[i].getProperties();
         vk::PhysicalDeviceFeatures deviceFeatures = devices[i].getFeatures();
 
-        bool graphicsQueueSupported = std::ranges::
+        bool graphicsQueueSupported = std::ranges::any_of(devices[i].getQueueFamilyProperties(),
+                                                          [] (const vk::QueueFamilyProperties &qfp){
+            return (bool)(qfp.queueFlags & vk::QueueFlagBits::eGraphics);
+        });
 
         // swap chain supported hai ya nahi, iska query func helpers header me hai
         bool swapChainSupported;
         SwapChainCapablityDetail capDetail = querySwapChainSupport(*widget, devices[i]);
         swapChainSupported = !capDetail.surfaceFormats.empty() && !capDetail.surfacePresentModes.empty();
 
-        if (deviceProperties.apiVersion >= vk::ApiVersion13
-            && queryQueueFamilyAvailiblity(widget, devices[i]).isComplete()
+        if (graphicsQueueSupported
+            && deviceProperties.apiVersion >= vk::ApiVersion13
             && swapChainSupported) {
             qDebug() << "Device " << deviceProperties.deviceName << "is choosed!";
             ++i;

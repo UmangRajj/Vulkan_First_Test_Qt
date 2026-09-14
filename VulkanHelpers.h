@@ -44,6 +44,17 @@ void debugMessengerParmsFill(vk::DebugUtilsMessengerCreateInfoEXT &objectToFill,
     objectToFill.pUserData = data;
 }
 
+bool isDeviceSuitable(vk::raii::PhysicalDevice &device)
+{
+    std::vector<const char *> requiredExtensions = {vk::KHRSwapchainExtensionName};
+
+    bool extensionSupported = std::ranges::all_of(requiredExtensions, [&device] (const auto &ext) {
+        return std::ranges::any_of(device.enumerateDeviceExtensionProperties(), [&ext] (const auto &ext_supported) {
+            return
+        });
+    });
+}
+
 struct SwapChainCapablityDetail
 {
     VkSurfaceCapabilitiesKHR surfaceCaps;
