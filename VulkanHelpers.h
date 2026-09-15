@@ -48,11 +48,28 @@ bool isDeviceSuitable(vk::raii::PhysicalDevice &device)
 {
     std::vector<const char *> requiredExtensions = {vk::KHRSwapchainExtensionName};
 
-    bool extensionSupported = std::ranges::all_of(requiredExtensions, [&device] (const auto &ext) {
-        return std::ranges::any_of(device.enumerateDeviceExtensionProperties(), [&ext] (const auto &ext_supported) {
-            return
+    bool graphicsQueueSupported = std::ranges::any_of(device.getQueueFamilyProperties(),
+                                                      [] (const vk::QueueFamilyProperties &qfp){
+                                                          return (bool)(qfp.queueFlags & vk::QueueFlagBits::eGraphics);
+                                                      });
+
+    bool extensionsSupported = std::ranges::all_of(requiredExtensions, [&device] (const char *&ext) {
+        return std::ranges::any_of(device.enumerateDeviceExtensionProperties(), [&ext] (const vk::ExtensionProperties &ext_supported) {
+            return std::strcmp(ext_supported.extensionName, ext) == 0;
         });
     });
+
+    auto features = device.template getFeatures2<vk::PhysicalDeviceFeatures2,
+                                                 vk::PhysicalDeviceVulkan11Features,
+                                                 vk::PhysicalDeviceVulkan13Features,
+                                                 vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
+    bool featuresSupported = features.template get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters
+                             && features.template get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering
+                             && features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
+
+    return extensionsSupported && featuresSupported && graphicsQueueSupported
+           && (device.getProperties().apiVersion >= vk::ApiVersion13);
+
 }
 
 struct SwapChainCapablityDetail

@@ -119,32 +119,17 @@ void setupPhysicalDevice(VulkanWidget *widget)
     }
 
     for (uint i {}; i < devices.size(); ) {
-        vk::PhysicalDeviceProperties deviceProperties = devices[i].getProperties();
-        vk::PhysicalDeviceFeatures deviceFeatures = devices[i].getFeatures();
-
-        bool graphicsQueueSupported = std::ranges::any_of(devices[i].getQueueFamilyProperties(),
-                                                          [] (const vk::QueueFamilyProperties &qfp){
-            return (bool)(qfp.queueFlags & vk::QueueFlagBits::eGraphics);
-        });
-
-        // swap chain supported hai ya nahi, iska query func helpers header me hai
-        bool swapChainSupported;
-        SwapChainCapablityDetail capDetail = querySwapChainSupport(*widget, devices[i]);
-        swapChainSupported = !capDetail.surfaceFormats.empty() && !capDetail.surfacePresentModes.empty();
-
-        if (graphicsQueueSupported
-            && deviceProperties.apiVersion >= vk::ApiVersion13
-            && swapChainSupported) {
-            qDebug() << "Device " << deviceProperties.deviceName << "is choosed!";
+        if (isDeviceSuitable(devices[i])) {
+            qDebug() << "Device " << devices[i].getProperties().deviceName << "is choosed!";
             ++i;
         } else {
-            qDebug() << "Device" << deviceProperties.deviceName << "isn't choosed!";
+            qDebug() << "Device" << devices[i].getProperties().deviceName << "isn't choosed!";
             devices.erase(devices.begin() + i);
         }
     }
 
     // ab hum pehla device list se choose kar lenge!
-    if (devices.size()) {
+    if (!devices.empty()) {
         widget->vkPhysicalDevice() = devices[0];
     } else {
         QMessageBox errorCritical;
